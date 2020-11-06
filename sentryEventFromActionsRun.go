@@ -11,8 +11,10 @@ import (
 
 func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner string, repo string, runID int64, actions *github.ActionsService) (*sentry.Event, error) {
 	sentryEvent := sentry.NewEvent()
-	sentryEvent.Level = "info"
-	sentryEvent.Type = "transaction"
+	// TODO try reporting events as errors
+	sentryEvent.Level = "error"
+	// sentryEvent.Level = "info"
+	// sentryEvent.Type = "transaction"
 
 	// wait for conclusion
 	conclusion := ""
