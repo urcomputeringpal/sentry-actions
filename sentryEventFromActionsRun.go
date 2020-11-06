@@ -79,8 +79,10 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 				Status:      status,
 			},
 		},
+		Tags: map[string]string{}{
+			"WorkflowRun.conclusion": run.GetConclusion(),
+		}
 	}
-	sentryEvent.Tags["WorkflowRun.conclusion"] = run.GetConclusion()
 
 	return sentryEvent, nil
 }
