@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_NODE: 'false'
+    volumes:
+      - ..:/workspace:cached
+    user: vscode
+    command: /workspace/.devcontainer/entrypoint.sh
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined

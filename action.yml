@@ -1,0 +1,32 @@
+name: sentry-actions
+description: Report workflow failures and job timing.
+branding:
+  icon: bookmark
+  color: gray-dark
+inputs:
+  GITHUB_RUN_ID:
+    description: The ID of the GitHub Actions Workflow Run to analyze and report to Sentry.
+    required: true
+  GITHUB_TOKEN:
+    description: Github token to use to perform operations
+    required: true
+  SENTRY_DSN:
+    description: Sentry configuration
+    required: true
+  SENTRY_ENVIRONMENT:
+    description: Sentry configuration
+    required: true
+  SENTRY_RELEASE:
+    description: Sentry configuration
+    required: true
+  SENTRY_DEBUG:
+    description: Sentry configuration
+    required: false
+    default: 'false'
+outputs:
+  html_url:
+    description: More info
+runs:
+  using: docker
+  image: Dockerfile
+  # image: 'docker://urcomputeringpal/sentry-actions:v0.3.0'
