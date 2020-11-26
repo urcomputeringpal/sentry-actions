@@ -60,11 +60,12 @@ func main() {
 	sentrySyncTransport.Timeout = time.Second * 30
 
 	sentryErr := sentry.Init(sentry.ClientOptions{
-		Dsn:         c.sentryDSN,
-		Environment: c.sentryEnvironment,
-		Release:     c.sentryRelease,
-		Debug:       c.sentryDebug,
-		Transport:   sentrySyncTransport,
+		Dsn:              c.sentryDSN,
+		Environment:      c.sentryEnvironment,
+		Release:          c.sentryRelease,
+		Debug:            c.sentryDebug,
+		Transport:        sentrySyncTransport,
+		AttachStacktrace: false,
 	})
 	if sentryErr != nil {
 		githubactions.Fatalf("sentry.Init: %s", sentryErr)
