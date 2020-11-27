@@ -71,17 +71,6 @@ func main() {
 		githubactions.Fatalf("sentry.Init: %s", sentryErr)
 	}
 
-	sentry.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetUser(sentry.User{Username: os.Getenv("GITHUB_ACTOR")})
-
-		for _, element := range os.Environ() {
-			variable := strings.Split(element, "=")
-			if strings.HasPrefix(variable[0], "GITHUB_") {
-				scope.SetTag(variable[0], variable[1])
-			}
-		}
-	})
-
 	ctx := context.Background()
 	defer sentry.RecoverWithContext(ctx)
 	client := c.githubClient(ctx)
