@@ -5,10 +5,21 @@ on:
       GITHUB_RUN_ID:
         description: The ID of the GitHub Actions Workflow Run to capture and report to Sentry
         required: true
+  workflow_run:
+    workflows:
+      - docker
+      - test
+    types: [completed]
 jobs:
-  capture-run:
+  trace-workflow:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+          false
       - uses: actions/checkout@v2
       - name: test
         id: action
