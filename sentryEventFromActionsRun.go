@@ -35,7 +35,7 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			time.Sleep(10000 * time.Millisecond)
 		}
 	}
-	description := fmt.Sprintf("%s/%s: %s (%s)", owner, repo, workflowName, run.GetEvent())
+	description := fmt.Sprintf("%s (%s)", workflowName, run.GetEvent())
 
 	jobs, _, jobsError := actions.ListWorkflowJobs(ctx, owner, repo, runID, &github.ListWorkflowJobsOptions{
 		Filter: "all",
@@ -79,6 +79,9 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			"workflow.conclusion": run.GetConclusion(),
 			"workflow.headBranch": run.GetHeadBranch(),
 			"workflow.id":         fmt.Sprintf("%d", run.GetWorkflowID()),
+			"workflow.name":       workflowName,
+			"github.owner":        owner,
+			"github.repository":   fmt.Sprintf("%s/%s", owner, repo),
 		},
 		Extra: map[string]interface{}{
 			"workflow.run": string(runJson),
@@ -95,6 +98,7 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			Value: fmt.Sprintf("%s failed", description),
 			Type:  "error",
 		})
+		sentryEvent.Level = sentry.LevelError
 	}
 
 	for _, job := range jobs.Jobs {

@@ -4,7 +4,7 @@
             "trace_id": "69640000000000000000000000000000",
             "span_id": "72616e646f6d0000",
             "op": "actions.workflow_run",
-            "description": "owner/repo: workflow (push)",
+            "description": "workflow (push)",
             "status": "ok"
         }
     },
@@ -13,13 +13,16 @@
     },
     "sdk": {},
     "tags": {
+        "github.owner": "owner",
+        "github.repository": "owner/repo",
         "workflow.conclusion": "success",
         "workflow.event": "push",
         "workflow.headBranch": "",
-        "workflow.id": "0"
+        "workflow.id": "0",
+        "workflow.name": "workflow"
     },
     "timestamp": "2020-01-02T15:04:06Z",
-    "transaction": "owner/repo: workflow (push)",
+    "transaction": "workflow (push)",
     "user": {
         "username": "actor"
     },
