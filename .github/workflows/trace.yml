@@ -1,0 +1,27 @@
+name: trace workflows
+on:
+  workflow_run:
+    workflows:
+      - docker
+      - test
+    types: [completed]
+jobs:
+  trace-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+      - uses: actions/checkout@v2
+      - name: test
+        id: action
+        uses: ./
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ENVIRONMENT: debug
+          SENTRY_RELEASE: $${{ github.sha }}
+          SENTRY_DEBUG: "true"
