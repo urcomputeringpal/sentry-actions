@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -54,6 +55,11 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 
 	spanID := generateSpanID(randReader)
 
+	runJson, jsonErr := json.MarshalIndent(run, "", "    ")
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+
 	sentryEvent := &sentry.Event{
 		Type:           transactionType,
 		StartTimestamp: run.GetCreatedAt().Time.UTC(),
@@ -75,9 +81,7 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			"workflow.id":         fmt.Sprintf("%d", run.GetWorkflowID()),
 		},
 		Extra: map[string]interface{}{
-			"workflow.head_sha":   run.GetHeadSHA(),
-			"workflow.run_number": run.GetRunNumber(),
-			"workflow.html_url":   run.GetHTMLURL(),
+			"workflow.run": string(runJson),
 		},
 		User: sentry.User{
 			Username: username,
@@ -94,6 +98,11 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 	for _, job := range jobs.Jobs {
 		jobSpanID := generateSpanID(strings.NewReader(job.GetNodeID()))
 
+		jobJson, jsonErr := json.MarshalIndent(job, "", "    ")
+		if jsonErr != nil {
+			return nil, jsonErr
+		}
+
 		sentryEvent.Spans = append(sentryEvent.Spans, &sentry.Span{
 			TraceID:        traceID,
 			SpanID:         jobSpanID,
@@ -103,10 +112,18 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			StartTimestamp: job.GetStartedAt().Time.UTC(),
 			EndTimestamp:   job.GetCompletedAt().Time.UTC(),
 			Status:         spanStatusFromConclusion(job.GetConclusion()),
+			Data: map[string]interface{}{
+				"job": string(jobJson),
+			},
 		})
 		for _, step := range job.Steps {
-
 			stepSpanID := generateSpanID(strings.NewReader(fmt.Sprintf("%s-%d", job.GetNodeID(), step.GetNumber())))
+
+			stepJson, jsonErr := json.MarshalIndent(step, "", "    ")
+			if jsonErr != nil {
+				return nil, jsonErr
+			}
+
 			sentryEvent.Spans = append(sentryEvent.Spans, &sentry.Span{
 				TraceID:        traceID,
 				SpanID:         stepSpanID,
@@ -116,6 +133,9 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 				StartTimestamp: step.GetStartedAt().Time.UTC(),
 				EndTimestamp:   step.GetCompletedAt().Time.UTC(),
 				Status:         spanStatusFromConclusion(step.GetConclusion()),
+				Data: map[string]interface{}{
+					"job": string(stepJson),
+				},
 			})
 		}
 	}
