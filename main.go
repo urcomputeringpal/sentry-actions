@@ -81,11 +81,6 @@ func main() {
 		githubactions.Fatalf("sentry.Init: %s", sentryErr)
 	}
 
-	// TODO move into function
-	sentry.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetUser(sentry.User{Username: c.event.Sender.GetLogin()})
-	})
-
 	ctx := context.Background()
 	defer sentry.RecoverWithContext(ctx)
 	client := c.githubClient(ctx)
