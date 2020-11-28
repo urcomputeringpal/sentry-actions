@@ -106,7 +106,7 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 		})
 		for _, step := range job.Steps {
 
-			stepSpanID := fmt.Sprintf("%x", generateSpanID(strings.NewReader(fmt.Sprintf("%s-%d", job.GetNodeID(), step.GetNumber()))))
+			stepSpanID := generateSpanID(strings.NewReader(fmt.Sprintf("%s-%d", job.GetNodeID(), step.GetNumber())))
 			sentryEvent.Spans = append(sentryEvent.Spans, &sentry.Span{
 				TraceID:        traceID,
 				SpanID:         stepSpanID,
