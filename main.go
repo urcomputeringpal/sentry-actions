@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/go-github/v32/github"
@@ -26,30 +26,40 @@ type config struct {
 	owner             string
 	repo              string
 	workflowName      string
+	event             *CompleteWorkflowRunEvent
+}
+
+type CompleteWorkflowRunEvent struct {
+	github.WorkflowRunEvent
+	Action *string `json:"action,omitempty"`
+
+	WorkflowRun *github.WorkflowRun `json:"workflow_run,omitempty"`
+	Workflow    *github.Workflow    `json:"workflow,omitempty"`
 }
 
 func main() {
-	if githubactions.GetInput("GITHUB_RUN_ID") == os.Getenv("GITHUB_RUN_ID") {
-		githubactions.Fatalf("%+v", errors.New("cannot report on a running action. see usage documentation"))
-	}
-
 	c := &config{
 		githubToken:       githubactions.GetInput("GITHUB_TOKEN"),
 		sentryDSN:         githubactions.GetInput("SENTRY_DSN"),
 		sentryEnvironment: githubactions.GetInput("SENTRY_ENVIRONMENT"),
 		sentryRelease:     githubactions.GetInput("SENTRY_RELEASE"),
 		sentryDebug:       githubactions.GetInput("SENTRY_DEBUG") == "true",
-		workflowName:      os.Getenv("GITHUB_WORKFLOW"),
 	}
-	githubRunID, err := strconv.ParseInt(githubactions.GetInput("GITHUB_RUN_ID"), 10, 64)
+
+	eventString, err := ioutil.ReadFile(os.Getenv("GITHUB_EVENT_PATH"))
 	if err != nil {
+		githubactions.Fatalf("Couldn't read event: %+v", err)
+	}
+
+	jsonErr := json.Unmarshal(eventString, &c.event)
+	if jsonErr != nil {
 		githubactions.Fatalf("failed to validate input: %+v", err)
 	}
-	c.githubRunID = githubRunID
 
-	repoOwner := strings.Split(os.Getenv("GITHUB_REPOSITORY"), "/")
-	c.owner = repoOwner[0]
-	c.repo = repoOwner[1]
+	c.githubRunID = c.event.WorkflowRun.GetID()
+	c.owner = c.event.Repo.GetOwner().GetLogin()
+	c.repo = c.event.Repo.GetName()
+	c.workflowName = c.event.Workflow.GetName()
 
 	validateErr := c.Validate()
 	if validateErr != nil {
@@ -71,11 +81,16 @@ func main() {
 		githubactions.Fatalf("sentry.Init: %s", sentryErr)
 	}
 
+	// TODO move into function
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetUser(sentry.User{Username: c.event.Sender.GetLogin()})
+	})
+
 	ctx := context.Background()
 	defer sentry.RecoverWithContext(ctx)
 	client := c.githubClient(ctx)
 
-	sentryEvent, eventError := sentryEventFromActionsRun(ctx, c.workflowName, c.owner, c.repo, c.githubRunID, client.Actions)
+	sentryEvent, eventError := sentryEventFromActionsRun(ctx, c.workflowName, c.owner, c.repo, c.githubRunID, c.event.Sender.GetLogin(), client.Actions)
 	if eventError != nil {
 		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
 	}

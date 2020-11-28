@@ -15,30 +15,24 @@
 package main
 
 import (
-	"crypto/rand"
+	"fmt"
 	"io"
 )
 
-func generateTraceID(seed io.Reader) [16]byte {
+func generateTraceID(seed io.Reader) string {
 	var r [16]byte
-	if seed == nil {
-		seed = rand.Reader
-	}
 	_, err := seed.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return fmt.Sprintf("%x", r)
 }
 
-func generateSpanID(seed io.Reader) [8]byte {
+func generateSpanID(seed io.Reader) string {
 	var r [8]byte
-	if seed == nil {
-		seed = rand.Reader
-	}
 	_, err := seed.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return fmt.Sprintf("%x", r)
 }

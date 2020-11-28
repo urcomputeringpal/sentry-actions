@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -67,7 +68,7 @@ func init() {
 			event:       &sentry.Event{},
 			err:         false,
 			wantTraceID: "69640000000000000000000000000000",
-			wantSpanID:  "6964000000000000",
+			wantSpanID:  "7465737400000000",
 		},
 	}
 }
@@ -77,8 +78,27 @@ func TestTable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.actionsService.MockWorkflowRun(tt.workflowRun)
 			// TODO
-			tt.actionsService.MockWorkflowJobs(&github.Jobs{})
-			event, err := sentryEventFromActionsRun(context.Background(), "workflow", "owner", "repo", 123, tt.actionsService)
+			tt.actionsService.MockWorkflowJobs(&github.Jobs{
+				Jobs: []*github.WorkflowJob{
+					{
+						ID:          github.Int64(1234),
+						NodeID:      github.String("test"),
+						Name:        github.String("test"),
+						StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
+						CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
+
+						Steps: []*github.TaskStep{
+							{
+								Number:      github.Int64(1234),
+								Name:        github.String("test"),
+								StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
+								CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
+							},
+						},
+					},
+				},
+			})
+			event, err := sentryEventFromActionsRun(context.Background(), "workflow", "owner", "repo", 123, "actor", tt.actionsService)
 
 			if tt.err && err == nil {
 				t.Errorf("%s: expected an error, didn't get one", tt.name)
@@ -93,16 +113,15 @@ func TestTable(t *testing.T) {
 				t.Errorf("%s: event is nil", tt.name)
 				return
 			}
-			// if tt.wantTraceID != event.Spans[0].TraceID {
-			// 	log.Printf("%#v", event)
-			// 	t.Errorf("%s.TraceID: want %s, got %s", tt.name, tt.wantTraceID, event.Spans[0].TraceID)
-			// 	return
-			// }
-			// if tt.wantSpanID != event.Spans[0].SpanID {
-			// 	log.Printf("%#v", event)
-			// 	t.Errorf("%s.SpanID: want %s, got %s", tt.name, tt.wantSpanID, event.Spans[0].SpanID)
-			// 	return
-			// }
+			if tt.wantTraceID != event.Spans[0].TraceID {
+				t.Errorf("%s.TraceID: want %s, got %s", tt.name, tt.wantTraceID, event.Spans[0].TraceID)
+				return
+			}
+			if tt.wantSpanID != event.Spans[0].SpanID {
+				t.Errorf("%s.SpanID: want %s, got %s", tt.name, tt.wantSpanID, event.Spans[0].SpanID)
+				return
+			}
+			log.Printf("%#v", event)
 		})
 	}
 }
