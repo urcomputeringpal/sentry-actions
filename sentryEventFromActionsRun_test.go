@@ -2,14 +2,22 @@ package main
 
 import (
 	"context"
-	"log"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v32/github"
 )
+
+var update = flag.Bool("update", false, "update .golden files")
 
 type happyPathActionsClient struct {
 	workflowRun *github.WorkflowRun
@@ -28,9 +36,8 @@ type test struct {
 	actionsService mockableActionsService
 	workflowRun    *github.WorkflowRun
 	event          *sentry.Event
+	jobs           []*github.WorkflowJob
 	err            bool
-	wantTraceID    string
-	wantSpanID     string
 }
 
 var (
@@ -56,7 +63,7 @@ func (c *happyPathActionsClient) MockWorkflowJobs(j *github.Jobs) {
 func init() {
 	tests = []test{
 		{
-			name:           "sample",
+			name:           "example",
 			actionsService: &happyPathActionsClient{},
 			workflowRun: &github.WorkflowRun{
 				Conclusion: github.String("success"),
@@ -65,10 +72,26 @@ func init() {
 				CreatedAt:  &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
 				UpdatedAt:  &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
 			},
-			event:       &sentry.Event{},
-			err:         false,
-			wantTraceID: "69640000000000000000000000000000",
-			wantSpanID:  "7465737400000000",
+			jobs: []*github.WorkflowJob{
+				{
+					ID:          github.Int64(1234),
+					NodeID:      github.String("test"),
+					Name:        github.String("test"),
+					StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
+					CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
+
+					Steps: []*github.TaskStep{
+						{
+							Number:      github.Int64(1234),
+							Name:        github.String("test"),
+							StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
+							CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
+						},
+					},
+				},
+			},
+			event: &sentry.Event{},
+			err:   false,
 		},
 	}
 }
@@ -77,28 +100,8 @@ func TestTable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.actionsService.MockWorkflowRun(tt.workflowRun)
-			// TODO
-			tt.actionsService.MockWorkflowJobs(&github.Jobs{
-				Jobs: []*github.WorkflowJob{
-					{
-						ID:          github.Int64(1234),
-						NodeID:      github.String("test"),
-						Name:        github.String("test"),
-						StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
-						CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
-
-						Steps: []*github.TaskStep{
-							{
-								Number:      github.Int64(1234),
-								Name:        github.String("test"),
-								StartedAt:   &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)},
-								CompletedAt: &github.Timestamp{time.Date(2020, time.January, 02, 15, 04, 06, 0, time.UTC)},
-							},
-						},
-					},
-				},
-			})
-			event, err := sentryEventFromActionsRun(context.Background(), "workflow", "owner", "repo", 123, "actor", tt.actionsService)
+			tt.actionsService.MockWorkflowJobs(&github.Jobs{Jobs: tt.jobs})
+			event, err := sentryEventFromActionsRun(context.Background(), "workflow", "owner", "repo", 123, "actor", tt.actionsService, strings.NewReader("random"))
 
 			if tt.err && err == nil {
 				t.Errorf("%s: expected an error, didn't get one", tt.name)
@@ -113,15 +116,28 @@ func TestTable(t *testing.T) {
 				t.Errorf("%s: event is nil", tt.name)
 				return
 			}
-			if tt.wantTraceID != event.Spans[0].TraceID {
-				t.Errorf("%s.TraceID: want %s, got %s", tt.name, tt.wantTraceID, event.Spans[0].TraceID)
-				return
+			got, err := json.MarshalIndent(event, "", "    ")
+			if err != nil {
+				t.Error(err)
 			}
-			if tt.wantSpanID != event.Spans[0].SpanID {
-				t.Errorf("%s.SpanID: want %s, got %s", tt.name, tt.wantSpanID, event.Spans[0].SpanID)
-				return
+
+			golden := filepath.Join(".", "testdata", fmt.Sprintf("%s.event.json", tt.name))
+			if *update {
+				err := ioutil.WriteFile(golden, got, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
-			log.Printf("%#v", event)
+
+			want, err := ioutil.ReadFile(golden)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("struct %s mismatch (-want +got):\n%s", tt.name, diff)
+			}
+
 		})
 	}
 }

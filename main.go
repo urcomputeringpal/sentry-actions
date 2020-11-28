@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -86,7 +87,7 @@ func main() {
 	defer sentry.RecoverWithContext(ctx)
 	client := c.githubClient(ctx)
 
-	sentryEvent, eventError := sentryEventFromActionsRun(ctx, c.workflowName, c.owner, c.repo, c.githubRunID, c.event.Sender.GetLogin(), client.Actions)
+	sentryEvent, eventError := sentryEventFromActionsRun(ctx, c.workflowName, c.owner, c.repo, c.githubRunID, c.event.Sender.GetLogin(), client.Actions, rand.Reader)
 	if eventError != nil {
 		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
 	}

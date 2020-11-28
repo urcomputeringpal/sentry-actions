@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -18,8 +18,9 @@ type actionsService interface {
 	ListWorkflowJobs(ctx context.Context, owner, repo string, runID int64, opts *github.ListWorkflowJobsOptions) (*github.Jobs, *github.Response, error)
 }
 
-func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner string, repo string, runID int64, username string, actions actionsService) (*sentry.Event, error) {
+func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner string, repo string, runID int64, username string, actions actionsService, randReader io.Reader) (*sentry.Event, error) {
 	// wait for conclusion
+	// TODO refactor to use workflowRun from event
 	conclusion := ""
 	var run *github.WorkflowRun
 	var runError error
@@ -42,13 +43,16 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 		return nil, jobsError
 	}
 
+	// The intent of this region is to join multiple actions workflows launched in response to the same event together
+	// TODO test
 	var traceID string
 	if run.GetCheckSuiteURL() != "" {
 		traceID = generateTraceID(strings.NewReader(run.GetCheckSuiteURL()))
 	} else {
 		traceID = generateTraceID(strings.NewReader(run.GetNodeID()))
 	}
-	spanID := generateSpanID(rand.Reader)
+
+	spanID := generateSpanID(randReader)
 
 	sentryEvent := &sentry.Event{
 		Type:           transactionType,
@@ -101,6 +105,7 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			Status:         spanStatusFromConclusion(job.GetConclusion()),
 		})
 		for _, step := range job.Steps {
+
 			stepSpanID := fmt.Sprintf("%x", generateSpanID(strings.NewReader(fmt.Sprintf("%s-%d", job.GetNodeID(), step.GetNumber()))))
 			sentryEvent.Spans = append(sentryEvent.Spans, &sentry.Span{
 				TraceID:        traceID,

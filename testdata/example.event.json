@@ -1,0 +1,52 @@
+{
+    "contexts": {
+        "trace": {
+            "trace_id": "69640000000000000000000000000000",
+            "span_id": "72616e646f6d0000",
+            "op": "actions.workflow_run",
+            "description": "owner/repo: workflow (push)",
+            "status": "ok"
+        }
+    },
+    "extra": {
+        "workflow.head_sha": "",
+        "workflow.html_url": "",
+        "workflow.run_number": 0
+    },
+    "sdk": {},
+    "tags": {
+        "workflow.conclusion": "success",
+        "workflow.event": "push",
+        "workflow.headBranch": "",
+        "workflow.id": "0"
+    },
+    "timestamp": "2020-01-02T15:04:06Z",
+    "transaction": "owner/repo: workflow (push)",
+    "user": {
+        "username": "actor"
+    },
+    "type": "transaction",
+    "start_timestamp": "2020-01-02T15:04:05Z",
+    "spans": [
+        {
+            "trace_id": "69640000000000000000000000000000",
+            "span_id": "7465737400000000",
+            "parent_span_id": "72616e646f6d0000",
+            "op": "actions.job",
+            "description": "test",
+            "status": "ok",
+            "start_timestamp": "2020-01-02T15:04:05Z",
+            "timestamp": "2020-01-02T15:04:06Z"
+        },
+        {
+            "trace_id": "69640000000000000000000000000000",
+            "span_id": "37343635373337343264333133323333",
+            "parent_span_id": "7465737400000000",
+            "op": "actions.step",
+            "description": "test",
+            "status": "ok",
+            "start_timestamp": "2020-01-02T15:04:05Z",
+            "timestamp": "2020-01-02T15:04:06Z"
+        }
+    ]
+}
