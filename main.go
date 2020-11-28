@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
 
@@ -89,6 +90,7 @@ func main() {
 	if eventError != nil {
 		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
 	}
+	log.Printf("%#v", eventError)
 
 	id := sentry.CaptureEvent(sentryEvent)
 	if id == nil {
