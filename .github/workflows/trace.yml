@@ -23,5 +23,5 @@ jobs:
 
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_ENVIRONMENT: debug
-          SENTRY_RELEASE: $${{ github.sha }}
+          SENTRY_RELEASE: ${{ github.sha }}
           SENTRY_DEBUG: "true"
