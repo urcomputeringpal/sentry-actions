@@ -86,6 +86,8 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 		User: sentry.User{
 			Username: username,
 		},
+		// TODO
+		// Modules
 	}
 
 	if run.GetConclusion() == "failure" {
