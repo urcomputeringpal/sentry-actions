@@ -90,7 +90,7 @@ func main() {
 	if eventError != nil {
 		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
 	}
-	log.Printf("%#v", eventError)
+	log.Printf("%#v", sentryEvent)
 
 	id := sentry.CaptureEvent(sentryEvent)
 	if id == nil {
