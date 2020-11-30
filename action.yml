@@ -4,9 +4,6 @@ branding:
   icon: bookmark
   color: gray-dark
 inputs:
-  GITHUB_RUN_ID:
-    description: The ID of the GitHub Actions Workflow Run to analyze and report to Sentry.
-    required: true
   GITHUB_TOKEN:
     description: Github token to use to perform operations
     required: true
