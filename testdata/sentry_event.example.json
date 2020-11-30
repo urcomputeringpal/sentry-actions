@@ -4,7 +4,7 @@
             "trace_id": "68747470733a2f2f6170692e67697468",
             "span_id": "72616e646f6d0000",
             "op": "actions.workflow_run",
-            "description": "owner/repo: renovate (schedule)",
+            "description": "renovate (schedule)",
             "status": "ok"
         }
     },
@@ -13,13 +13,16 @@
     },
     "sdk": {},
     "tags": {
+        "github.owner": "owner",
+        "github.repository": "owner/repo",
         "workflow.conclusion": "success",
         "workflow.event": "schedule",
         "workflow.headBranch": "master",
-        "workflow.id": "2915582"
+        "workflow.id": "2915582",
+        "workflow.name": "renovate"
     },
     "timestamp": "2020-11-30T12:25:04Z",
-    "transaction": "owner/repo: renovate (schedule)",
+    "transaction": "renovate (schedule)",
     "user": {
         "username": "owner"
     },

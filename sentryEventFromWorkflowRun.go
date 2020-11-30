@@ -20,7 +20,7 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 	run := event.WorkflowRun
 	runID := run.GetID()
 
-	description := fmt.Sprintf("%s/%s: %s (%s)", owner, repo, workflowName, run.GetEvent())
+	description := fmt.Sprintf("%s (%s)", workflowName, run.GetEvent())
 
 	jobs, _, jobsError := actions.ListWorkflowJobs(ctx, owner, repo, runID, &github.ListWorkflowJobsOptions{
 		Filter: "all",
@@ -64,6 +64,9 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 			"workflow.conclusion": run.GetConclusion(),
 			"workflow.headBranch": run.GetHeadBranch(),
 			"workflow.id":         fmt.Sprintf("%d", run.GetWorkflowID()),
+			"workflow.name":       workflowName,
+			"github.owner":        owner,
+			"github.repository":   fmt.Sprintf("%s/%s", owner, repo),
 		},
 		Extra: map[string]interface{}{
 			"workflow.run": string(runJson),
