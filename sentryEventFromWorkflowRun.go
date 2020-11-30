@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/google/go-github/v32/github"
@@ -14,27 +13,13 @@ import (
 
 const transactionType = "transaction"
 
-type actionsService interface {
-	GetWorkflowRunByID(ctx context.Context, owner string, repo string, runID int64) (*github.WorkflowRun, *github.Response, error)
-	ListWorkflowJobs(ctx context.Context, owner, repo string, runID int64, opts *github.ListWorkflowJobsOptions) (*github.Jobs, *github.Response, error)
-}
+func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunEvent, actions actionsService, randReader io.Reader) (*sentry.Event, error) {
+	owner := event.GetRepo().GetOwner().GetLogin()
+	repo := event.GetRepo().GetName()
+	workflowName := event.Workflow.GetName()
+	run := event.WorkflowRun
+	runID := run.GetID()
 
-func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner string, repo string, runID int64, username string, actions actionsService, randReader io.Reader) (*sentry.Event, error) {
-	// wait for conclusion
-	// TODO refactor to use workflowRun from event
-	conclusion := ""
-	var run *github.WorkflowRun
-	var runError error
-	for conclusion == "" {
-		run, _, runError = actions.GetWorkflowRunByID(ctx, owner, repo, runID)
-		if runError != nil {
-			return nil, runError
-		}
-		conclusion = run.GetConclusion()
-		if conclusion == "" {
-			time.Sleep(10000 * time.Millisecond)
-		}
-	}
 	description := fmt.Sprintf("%s/%s: %s (%s)", owner, repo, workflowName, run.GetEvent())
 
 	jobs, _, jobsError := actions.ListWorkflowJobs(ctx, owner, repo, runID, &github.ListWorkflowJobsOptions{
@@ -84,17 +69,20 @@ func sentryEventFromActionsRun(ctx context.Context, workflowName string, owner s
 			"workflow.run": string(runJson),
 		},
 		User: sentry.User{
-			Username: username,
+			Username: event.GetSender().GetLogin(),
 		},
 		// TODO
 		// Modules
 	}
 
+	// TODO extract
 	if run.GetConclusion() == "failure" {
 		sentryEvent.Exception = append(sentryEvent.Exception, sentry.Exception{
-			Value: fmt.Sprintf("%s failed", description),
-			Type:  "error",
+			Value:      fmt.Sprintf("%s failed", description),
+			Type:       "error",
+			Stacktrace: &sentry.Stacktrace{Frames: []sentry.Frame{}},
 		})
+		sentryEvent.Level = sentry.LevelError
 	}
 
 	for _, job := range jobs.Jobs {

@@ -19,18 +19,17 @@ import (
 )
 
 type config struct {
-	githubRunID       int64
 	githubToken       string
 	sentryDSN         string
 	sentryEnvironment string
 	sentryRelease     string
 	sentryDebug       bool
-	owner             string
-	repo              string
-	workflowName      string
 	event             *CompleteWorkflowRunEvent
 }
 
+type actionsService interface {
+	ListWorkflowJobs(ctx context.Context, owner, repo string, runID int64, opts *github.ListWorkflowJobsOptions) (*github.Jobs, *github.Response, error)
+}
 type CompleteWorkflowRunEvent struct {
 	github.WorkflowRunEvent
 	Action *string `json:"action,omitempty"`
@@ -58,15 +57,20 @@ func main() {
 		githubactions.Fatalf("failed to validate input: %+v", err)
 	}
 
-	c.githubRunID = c.event.WorkflowRun.GetID()
-	c.owner = c.event.Repo.GetOwner().GetLogin()
-	c.repo = c.event.Repo.GetName()
-	c.workflowName = c.event.Workflow.GetName()
-
 	validateErr := c.Validate()
 	if validateErr != nil {
 		githubactions.Fatalf("failed to validate input: %+v", validateErr)
 	}
+
+	ctx := context.Background()
+	defer sentry.RecoverWithContext(ctx)
+	client := c.githubClient(ctx)
+
+	sentryEvent, eventError := sentryEventFromWorkflowRun(ctx, c.event, client.Actions, rand.Reader)
+	if eventError != nil {
+		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
+	}
+	log.Printf("%#v", sentryEvent)
 
 	sentrySyncTransport := sentry.NewHTTPSyncTransport()
 	sentrySyncTransport.Timeout = time.Second * 30
@@ -82,16 +86,6 @@ func main() {
 	if sentryErr != nil {
 		githubactions.Fatalf("sentry.Init: %s", sentryErr)
 	}
-
-	ctx := context.Background()
-	defer sentry.RecoverWithContext(ctx)
-	client := c.githubClient(ctx)
-
-	sentryEvent, eventError := sentryEventFromActionsRun(ctx, c.workflowName, c.owner, c.repo, c.githubRunID, c.event.Sender.GetLogin(), client.Actions, rand.Reader)
-	if eventError != nil {
-		githubactions.Fatalf("failed creating event from actions run: %+v", eventError)
-	}
-	log.Printf("%#v", sentryEvent)
 
 	id := sentry.CaptureEvent(sentryEvent)
 	if id == nil {
