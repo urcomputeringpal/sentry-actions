@@ -19,6 +19,7 @@
     "tags": {
         "github.owner": "owner",
         "github.repository": "owner/repo",
+        "transaction": "renovate (schedule)",
         "workflow.name": "renovate",
         "workflow_run.conclusion": "success",
         "workflow_run.event": "schedule",

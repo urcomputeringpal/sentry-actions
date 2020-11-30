@@ -60,6 +60,9 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 			},
 		},
 		Tags: map[string]string{
+			// Related issues depends on this being set
+			// https://github.com/getsentry/sentry-javascript/pull/3024
+			"transaction":             description,
 			"github.owner":            owner,
 			"github.repository":       fmt.Sprintf("%s/%s", owner, repo),
 			"workflow.name":           workflowName,
