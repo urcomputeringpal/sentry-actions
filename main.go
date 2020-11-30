@@ -10,12 +10,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/google/go-github/v32/github"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sethvargo/go-githubactions"
 	"golang.org/x/oauth2"
-
-	"github.com/getsentry/sentry-go"
 )
 
 type config struct {
