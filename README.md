@@ -6,11 +6,13 @@
 name: sentry-actions
 on:
   workflow_run:
+    # Sample completed workflows
+    types: [completed]
+    # List the names of the workflows you'd like to sample
     workflows:
       - docker
       - test
       - fail
-    types: [completed]
 jobs:
   sentry-actions:
     runs-on: ubuntu-latest
