@@ -81,9 +81,13 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 	// TODO extract
 	if run.GetConclusion() == "failure" {
 		sentryEvent.Exception = append(sentryEvent.Exception, sentry.Exception{
-			Value:      fmt.Sprintf("%s failed", description),
-			Type:       "error",
-			Stacktrace: &sentry.Stacktrace{Frames: []sentry.Frame{}},
+			Value: fmt.Sprintf("%s failed", description),
+			Type:  "error",
+			Stacktrace: &sentry.Stacktrace{Frames: []sentry.Frame{
+				{
+					Filename: event.Workflow.GetPath(),
+				},
+			}},
 		})
 		sentryEvent.Level = sentry.LevelError
 	}

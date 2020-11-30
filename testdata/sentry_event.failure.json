@@ -31,7 +31,13 @@
         {
             "type": "error",
             "value": "renovate (schedule) failed",
-            "stacktrace": {}
+            "stacktrace": {
+                "frames": [
+                    {
+                        "filename": ".github/workflows/renovate.yaml"
+                    }
+                ]
+            }
         }
     ],
     "type": "transaction",
