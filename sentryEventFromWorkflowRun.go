@@ -72,7 +72,6 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 		},
 		Extra: map[string]interface{}{
 			"workflow.source":   event.Workflow.GetHTMLURL(),
-			"workflow.url":      event.Workflow.GetURL(),
 			"workflow_run.id":   fmt.Sprintf("%d", run.GetWorkflowID()),
 			"workflow_run.url":  run.GetHTMLURL(),
 			"workflow_run.json": string(runJson),
