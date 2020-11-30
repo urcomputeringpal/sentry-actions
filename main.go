@@ -91,6 +91,16 @@ func main() {
 	if id == nil {
 		githubactions.Fatalf("failed reporting event %+v", sentryEvent)
 	}
+
+	if sentryEvent.Level == sentry.LevelError {
+		sentryEvent.Type = ""
+		sentryEvent.Transaction = ""
+		sentryEvent.Spans = []*sentry.Span{}
+		id := sentry.CaptureEvent(sentryEvent)
+		if id == nil {
+			githubactions.Fatalf("failed reporting event %+v", sentryEvent)
+		}
+	}
 }
 
 func (c *config) Validate() error {
