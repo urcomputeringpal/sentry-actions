@@ -4,6 +4,7 @@ on:
     workflows:
       - docker
       - test
+      - fail
     types: [completed]
 jobs:
   trace-workflow:
