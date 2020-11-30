@@ -1,0 +1,11 @@
+name: fail
+
+on:
+  push:
+
+jobs:
+  fail:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sleep 5
+      - run: exit 1
