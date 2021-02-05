@@ -25,4 +25,4 @@ outputs:
     description: More info
 runs:
   using: docker
-  image: 'docker://urcomputeringpal/sentry-actions:main'
+  image: 'docker://urcomputeringpal/sentry-actions:v0.0.1'
