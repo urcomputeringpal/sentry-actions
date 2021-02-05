@@ -69,11 +69,11 @@ func sentryEventFromWorkflowRun(ctx context.Context, event *CompleteWorkflowRunE
 			"workflow_run.event":      run.GetEvent(),
 			"workflow_run.conclusion": run.GetConclusion(),
 			"workflow_run.headBranch": run.GetHeadBranch(),
+			"workflow_run.url":        run.GetHTMLURL(),
 		},
 		Extra: map[string]interface{}{
 			"workflow.source":   event.Workflow.GetHTMLURL(),
 			"workflow_run.id":   fmt.Sprintf("%d", run.GetWorkflowID()),
-			"workflow_run.url":  run.GetHTMLURL(),
 			"workflow_run.json": string(runJson),
 		},
 		User: sentry.User{
